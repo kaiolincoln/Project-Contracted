@@ -12,3 +12,5 @@ router.post(
     validateSchema(createUserSchema),
     new CreateUserController().handle
   );
+
+export { router };

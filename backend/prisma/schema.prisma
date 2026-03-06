@@ -1,0 +1,111 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum ContractStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING_RENEWAL
+}
+
+model User {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  role       Role     @default(VIEWER)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  contracts    Contract[]      // contratos que ele é responsável
+  history      ContractHistory[]
+  notifications Notification[]
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  document  String   @unique  // CPF ou CNPJ
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contracts Contract[]
+}
+
+model Contract {
+  id          String         @id @default(uuid())
+  title       String
+  number      String         @unique
+  value       Decimal
+  status      ContractStatus @default(ACTIVE)
+  startDate   DateTime
+  endDate     DateTime
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  clientId    String
+  client      Client         @relation(fields: [clientId], references: [id])
+
+  responsibleId String
+  responsible   User         @relation(fields: [responsibleId], references: [id])
+
+  documents   Document[]
+  history     ContractHistory[]
+  notifications Notification[]
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  name       String
+  url        String
+  size       Int?
+  createdAt  DateTime @default(now())
+
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id])
+}
+
+model ContractHistory {
+  id         String   @id @default(uuid())
+  action     String   // ex: "STATUS_CHANGED", "VALUE_UPDATED"
+  detail     String?  // descrição da alteração
+  createdAt  DateTime @default(now())
+
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id])
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  type      String   // ex: "EXPIRING_SOON", "EXPIRED"
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id])
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}

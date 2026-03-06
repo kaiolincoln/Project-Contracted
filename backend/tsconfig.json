@@ -1,0 +1,54 @@
+{
+  "compilerOptions": {
+    // Linguagem e Módulos
+    "target": "ES2020",                            // Versão do JavaScript para compilação
+    "module": "commonjs",                          // Sistema de módulos (CommonJS para Node.js)
+    "lib": ["ES2020"],                             // Bibliotecas de tipos incluídas
+    "moduleResolution": "node",                    // Estratégia de resolução de módulos (Node.js)
+    
+    // Diretórios
+    "outDir": "./dist",                            // Pasta de saída dos arquivos compilados
+    "rootDir": "./src",                            // Pasta raiz dos arquivos fonte
+    
+    // Strict Type-Checking Options (TypeScript 5.6)
+    "strict": true,                                // Ativa todas as verificações estritas
+    "noImplicitAny": true,                         // Proíbe variáveis sem tipo explícito
+    "strictNullChecks": true,                      // Trata null/undefined como tipos distintos
+    "strictFunctionTypes": true,                   // Verificação rigorosa de tipos de funções
+    "strictBindCallApply": true,                   // Verifica tipos em bind/call/apply
+    "strictPropertyInitialization": true,          // Exige inicialização de propriedades de classe
+    "noImplicitThis": true,                        // Erro quando 'this' tem tipo any implícito
+    "alwaysStrict": true,                          // Emite "use strict" em todos os arquivos
+    
+    // Additional Checks
+    "noUnusedLocals": true,                        // Erro para variáveis locais não utilizadas
+    "noUnusedParameters": true,                    // Erro para parâmetros não utilizados
+    "noImplicitReturns": true,                     // Erro se nem todos os caminhos retornam valor
+    "noFallthroughCasesInSwitch": true,            // Erro em case sem break
+    "noUncheckedIndexedAccess": true,              // Adiciona undefined ao acessar índices
+    "noImplicitOverride": true,                    // Exige palavra-chave override ao sobrescrever
+    "noPropertyAccessFromIndexSignature": false,   // Permite obj.prop em tipos indexados
+    
+    // Module Resolution
+    "esModuleInterop": true,                       // Interoperabilidade CommonJS e ES Modules
+    "allowSyntheticDefaultImports": true,          // Permite imports default sintéticos
+    "resolveJsonModule": true,                     // Permite importar arquivos .json
+    "isolatedModules": true,                       // Cada arquivo pode ser transpilado independentemente
+    
+    // Emit
+    "declaration": false,                          // Não gera arquivos .d.ts de declaração
+    "declarationMap": false,                       // Não gera sourcemaps para declarações
+    "sourceMap": true,                             // Gera arquivos .map para debug
+    "removeComments": true,                        // Remove comentários do código compilado
+    "importHelpers": false,                        // Não importa helpers do tslib
+    
+    // Interop Constraints
+    "forceConsistentCasingInFileNames": true,      // Exige capitalização consistente em nomes de arquivo
+    "skipLibCheck": true,                          // Pula verificação de tipos em bibliotecas
+    
+    // Type Acquisition
+    "types": ["node"]                              // Pacotes de tipos a incluir (@types/node)
+  },
+  "include": ["src/**/*"],                         // Arquivos a serem incluídos na compilação
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts"]  // Arquivos/pastas excluídos
+}

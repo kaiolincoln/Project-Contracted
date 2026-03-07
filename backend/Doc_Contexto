@@ -1,0 +1,114 @@
+🗄️ Modelagem do Banco de Dados
+Diagrama de Relacionamentos
+User (1)
+  └─ role: ADMIN | EDITOR | VIEWER
+
+Client (1) ─────────────────────< (N) Contract
+                                        │
+User (1) ────── responsibleId ─────────┤
+                                        │
+                                        ├─< (N) Document
+                                        ├─< (N) ContractHistory >─── User (1)
+                                        └─< (N) Notification >────── User (1)
+
+Entidades e Atributos
+User (Usuários do Sistema)
+typescript{
+  id: string (UUID)          // Identificador único
+  name: string               // Nome completo
+  email: string (unique)     // Email único
+  password: string           // Senha criptografada (bcrypt)
+  role: Role                 // ADMIN, EDITOR ou VIEWER
+  createdAt: DateTime        // Data de criação
+  updatedAt: DateTime        // Data de atualização
+}
+Enum Role:
+
+ADMIN — Acesso total: gerencia usuários, cria, edita e exclui contratos
+EDITOR — Pode criar e editar contratos, mas não excluir nem gerenciar usuários
+VIEWER — Somente leitura
+
+
+Client (Clientes)
+typescript{
+  id: string (UUID)          // Identificador único
+  name: string               // Nome completo ou razão social
+  document: string (unique)  // CPF ou CNPJ (único)
+  email: string?             // Email de contato (opcional)
+  phone: string?             // Telefone (opcional)
+  address: string?           // Endereço (opcional)
+  contracts: Contract[]      // Contratos deste cliente
+  createdAt: DateTime        // Data de criação
+  updatedAt: DateTime        // Data de atualização
+}
+
+Contract (Contratos)
+typescript{
+  id: string (UUID)          // Identificador único
+  title: string              // Título do contrato
+  number: string (unique)    // Número único (ex: CTR-2026-001)
+  value: Decimal             // Valor financeiro do contrato
+  status: ContractStatus     // ACTIVE | EXPIRED | CANCELLED | PENDING_RENEWAL
+  startDate: DateTime        // Data de início da vigência
+  endDate: DateTime          // Data de término da vigência
+  description: string?       // Observações adicionais (opcional)
+  clientId: string           // FK para Client
+  client: Client             // Relação com cliente
+  responsibleId: string      // FK para User
+  responsible: User          // Usuário responsável pelo contrato
+  documents: Document[]      // Arquivos anexados
+  history: ContractHistory[] // Histórico de alterações
+  notifications: Notification[] // Notificações geradas
+  createdAt: DateTime        // Data de criação
+  updatedAt: DateTime        // Data de atualização
+}
+Enum ContractStatus:
+
+ACTIVE — Contrato vigente e dentro do prazo
+EXPIRED — Prazo encerrado
+CANCELLED — Cancelado manualmente por EDITOR ou ADMIN
+PENDING_RENEWAL — Próximo do vencimento, aguardando renovação
+
+
+Document (Documentos Anexados)
+typescript{
+  id: string (UUID)          // Identificador único
+  name: string               // Nome original do arquivo
+  url: string                // URL do arquivo no storage (S3/Supabase)
+  size: number?              // Tamanho em bytes (opcional)
+  contractId: string         // FK para Contract
+  contract: Contract         // Relação com contrato
+  createdAt: DateTime        // Data de upload
+}
+Observação: O arquivo físico é armazenado externamente (S3 ou Supabase Storage). O banco guarda apenas a URL de acesso.
+
+ContractHistory (Histórico de Alterações)
+typescript{
+  id: string (UUID)          // Identificador único
+  action: string             // Tipo da ação realizada
+  detail: string?            // Descrição detalhada da alteração (opcional)
+  contractId: string         // FK para Contract
+  contract: Contract         // Relação com contrato
+  userId: string             // FK para User
+  user: User                 // Usuário que realizou a ação
+  createdAt: DateTime        // Data e hora exata da alteração
+}
+Exemplos de action: CONTRACT_CREATED, STATUS_CHANGED, VALUE_UPDATED, DOC_UPLOADED
+
+Notification (Notificações)
+typescript{
+  id: string (UUID)          // Identificador único
+  type: string               // Tipo da notificação
+  message: string            // Texto exibido ao usuário
+  read: boolean              // false = não lida, true = lida
+  contractId: string         // FK para Contract
+  contract: Contract         // Relação com contrato
+  userId: string             // FK para User
+  user: User                 // Usuário destinatário
+  createdAt: DateTime        // Data de criação
+}
+Tipos de notificação:
+
+EXPIRING_SOON — Contrato vence em 30, 15 ou 7 dias
+EXPIRED — Contrato passou da data de vencimento
+STATUS_CHANGED — Status do contrato foi alterado

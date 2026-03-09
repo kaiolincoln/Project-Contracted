@@ -79,17 +79,17 @@ model Document {
   createdAt  DateTime @default(now())
 
   contractId String
-  contract   Contract @relation(fields: [contractId], references: [id])
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
 
 model ContractHistory {
   id         String   @id @default(uuid())
-  action     String   
-  detail     String?  
+  action     String
+  detail     String?
   createdAt  DateTime @default(now())
 
   contractId String
-  contract   Contract @relation(fields: [contractId], references: [id])
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   userId     String
   user       User     @relation(fields: [userId], references: [id])
@@ -103,7 +103,7 @@ model Notification {
   createdAt DateTime @default(now())
 
   contractId String
-  contract   Contract @relation(fields: [contractId], references: [id])
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   userId    String
   user      User     @relation(fields: [userId], references: [id])

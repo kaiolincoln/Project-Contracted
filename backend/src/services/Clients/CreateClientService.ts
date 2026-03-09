@@ -11,7 +11,6 @@ interface CreateClientRequest {
 class CreateClientService {
   async execute({ name, document, email, phone, address }: CreateClientRequest) {
 
-    // Verifica se já existe cliente com esse CPF/CNPJ
     const clientExists = await prismaClient.client.findUnique({
       where: { document }
     });

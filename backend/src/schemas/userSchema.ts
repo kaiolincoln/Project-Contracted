@@ -1,4 +1,4 @@
-// Arquivo para garantir que entre os dados que certos. ass: lincoln
+// Arquivo para garantir que entrem os dados certos. ass: lincoln
 
 import { z } from "zod";
 
@@ -43,7 +43,7 @@ export const updateUserSchema = z.object({
     )
   });
 
-  export const changePasswordSchema = z.object({
+export const changePasswordSchema = z.object({
     body: z.object({
       currentPassword: z
         .string()
@@ -66,4 +66,13 @@ export const updateUserSchema = z.object({
         path: ["confirmPassword"],
       }
     )
+  });
+
+export const updateRoleSchema = z.object({
+    body: z.object({
+      role: z.string().refine(
+        (val) => ["ADMIN", "EDITOR"].includes(val),
+        { message: "Role inválida. Use ADMIN ou EDITOR" }
+      )
+    })
   });

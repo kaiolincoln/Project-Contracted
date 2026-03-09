@@ -1,7 +1,7 @@
 🗄️ Modelagem do Banco de Dados
 Diagrama de Relacionamentos
 User (1)
-  └─ role: ADMIN | EDITOR | VIEWER
+  └─ role: ADMIN | EDITOR
 
 Client (1) ─────────────────────< (N) Contract
                                         │
@@ -18,7 +18,7 @@ typescript{
   name: string               // Nome completo
   email: string (unique)     // Email único
   password: string           // Senha criptografada (bcrypt)
-  role: Role                 // ADMIN, EDITOR ou VIEWER
+  role: Role                 // ADMIN ou EDITOR
   createdAt: DateTime        // Data de criação
   updatedAt: DateTime        // Data de atualização
 }
@@ -26,7 +26,6 @@ Enum Role:
 
 ADMIN — Acesso total: gerencia usuários, cria, edita e exclui contratos
 EDITOR — Pode criar e editar contratos, mas não excluir nem gerenciar usuários
-VIEWER — Somente leitura
 
 
 Client (Clientes)
@@ -44,23 +43,23 @@ typescript{
 
 Contract (Contratos)
 typescript{
-  id: string (UUID)          // Identificador único
-  title: string              // Título do contrato
-  number: string (unique)    // Número único (ex: CTR-2026-001)
-  value: Decimal             // Valor financeiro do contrato
-  status: ContractStatus     // ACTIVE | EXPIRED | CANCELLED | PENDING_RENEWAL
-  startDate: DateTime        // Data de início da vigência
-  endDate: DateTime          // Data de término da vigência
-  description: string?       // Observações adicionais (opcional)
-  clientId: string           // FK para Client
-  client: Client             // Relação com cliente
-  responsibleId: string      // FK para User
-  responsible: User          // Usuário responsável pelo contrato
-  documents: Document[]      // Arquivos anexados
-  history: ContractHistory[] // Histórico de alterações
+  id: string (UUID)             // Identificador único
+  title: string                 // Título do contrato
+  number: string (unique)       // Número único (ex: CTR-2026-001)
+  value: Decimal                // Valor financeiro do contrato
+  status: ContractStatus        // ACTIVE | EXPIRED | CANCELLED | PENDING_RENEWAL
+  startDate: DateTime           // Data de início da vigência
+  endDate: DateTime             // Data de término da vigência
+  description: string?          // Observações adicionais (opcional)
+  clientId: string              // FK para Client
+  client: Client                // Relação com cliente
+  responsibleId: string         // FK para User
+  responsible: User             // Usuário responsável pelo contrato
+  documents: Document[]         // Arquivos anexados
+  history: ContractHistory[]    // Histórico de alterações
   notifications: Notification[] // Notificações geradas
-  createdAt: DateTime        // Data de criação
-  updatedAt: DateTime        // Data de atualização
+  createdAt: DateTime           // Data de criação
+  updatedAt: DateTime           // Data de atualização
 }
 Enum ContractStatus:
 
@@ -72,43 +71,327 @@ PENDING_RENEWAL — Próximo do vencimento, aguardando renovação
 
 Document (Documentos Anexados)
 typescript{
-  id: string (UUID)          // Identificador único
-  name: string               // Nome original do arquivo
-  url: string                // URL do arquivo no storage (S3/Supabase)
-  size: number?              // Tamanho em bytes (opcional)
-  contractId: string         // FK para Contract
-  contract: Contract         // Relação com contrato
-  createdAt: DateTime        // Data de upload
+  id: string (UUID)    // Identificador único
+  name: string         // Nome original do arquivo
+  url: string          // URL do arquivo no storage (S3/Supabase)
+  size: number?        // Tamanho em bytes (opcional)
+  contractId: string   // FK para Contract
+  contract: Contract   // Relação com contrato
+  createdAt: DateTime  // Data de upload
 }
 Observação: O arquivo físico é armazenado externamente (S3 ou Supabase Storage). O banco guarda apenas a URL de acesso.
 
 ContractHistory (Histórico de Alterações)
 typescript{
-  id: string (UUID)          // Identificador único
-  action: string             // Tipo da ação realizada
-  detail: string?            // Descrição detalhada da alteração (opcional)
-  contractId: string         // FK para Contract
-  contract: Contract         // Relação com contrato
-  userId: string             // FK para User
-  user: User                 // Usuário que realizou a ação
-  createdAt: DateTime        // Data e hora exata da alteração
+  id: string (UUID)    // Identificador único
+  action: string       // Tipo da ação realizada
+  detail: string?      // Descrição detalhada da alteração (opcional)
+  contractId: string   // FK para Contract
+  contract: Contract   // Relação com contrato
+  userId: string       // FK para User
+  user: User           // Usuário que realizou a ação
+  createdAt: DateTime  // Data e hora exata da alteração
 }
 Exemplos de action: CONTRACT_CREATED, STATUS_CHANGED, VALUE_UPDATED, DOC_UPLOADED
 
 Notification (Notificações)
 typescript{
-  id: string (UUID)          // Identificador único
-  type: string               // Tipo da notificação
-  message: string            // Texto exibido ao usuário
-  read: boolean              // false = não lida, true = lida
-  contractId: string         // FK para Contract
-  contract: Contract         // Relação com contrato
-  userId: string             // FK para User
-  user: User                 // Usuário destinatário
-  createdAt: DateTime        // Data de criação
+  id: string (UUID)    // Identificador único
+  type: string         // Tipo da notificação
+  message: string      // Texto exibido ao usuário
+  read: boolean        // false = não lida, true = lida
+  contractId: string   // FK para Contract
+  contract: Contract   // Relação com contrato
+  userId: string       // FK para User
+  user: User           // Usuário destinatário
+  createdAt: DateTime  // Data de criação
 }
 Tipos de notificação:
 
 EXPIRING_SOON — Contrato vence em 30, 15 ou 7 dias
 EXPIRED — Contrato passou da data de vencimento
 STATUS_CHANGED — Status do contrato foi alterado
+
+
+
+Métodos HTTP no POSTMAN
+São 5 métodos que você vai usar no projeto:
+
+GET — Buscar dados
+Nunca tem body
+O dado vai na URL
+
+GET /users          → lista todos
+GET /users/:id      → busca um específico
+GET /clients        → lista todos
+GET /clients/:id    → busca um específico
+
+POST — Criar algo novo
+Sempre tem body com os dados
+POST /users         → cria usuário
+POST /session       → faz login
+POST /clients       → cria cliente
+
+PUT — Atualizar tudo
+Tem body com os campos a atualizar
+PUT /me             → atualiza nome/email
+PUT /clients/:id    → atualiza cliente
+
+PATCH — Atualizar uma parte específica
+Tem body só com o que vai mudar
+PATCH /me/password          → só a senha
+PATCH /users/:id/role       → só a role
+PATCH /notifications/:id/read → só o status de leitura
+
+DELETE — Deletar
+Nunca tem body
+O id vai na URL
+
+DELETE /users/:id    → deleta usuário
+DELETE /clients/:id  → deleta cliente
+
+Diferença entre PUT e PATCH
+PUT   → você manda os dados que quer atualizar
+        o que não mandar mantém o valor atual
+
+PATCH → usado para atualizar UM campo específico
+        ex: só a senha, só a role, só o status
+
+🛣️ Endpoints da API
+🔓 Rotas Públicas
+POST /users — Criar usuário
+typescript// Body
+{
+  "name": "João Silva",
+  "email": "joao@email.com",
+  "password": "Senha123"
+}
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "name": "João Silva",
+  "email": "joao@email.com",
+  "role": "EDITOR"
+}
+
+POST /session — Login
+typescript// Body
+{
+  "email": "joao@email.com",
+  "password": "Senha123"
+}
+
+// Resposta sucesso
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+---
+
+### 🔒 Rotas Autenticadas
+
+Todas as rotas abaixo exigem o header:
+```
+Authorization: Bearer <token>
+
+👤 Usuários
+GET /me — Dados do usuário logado
+typescript// Sem body
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "name": "João Silva",
+  "email": "joao@email.com",
+  "role": "EDITOR"
+}
+
+PUT /me — Atualizar nome ou email
+typescript// Body (ao menos um campo obrigatório)
+{
+  "name": "João Atualizado",
+  "email": "novoemail@email.com"
+}
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "name": "João Atualizado",
+  "email": "novoemail@email.com",
+  "role": "EDITOR",
+  "updatedAt": "2026-03-09T10:00:00.000Z"
+}
+
+PATCH /me/password — Trocar senha
+typescript// Body
+{
+  "currentPassword": "SenhaAtual123",
+  "newPassword": "NovaSenha123",
+  "confirmPassword": "NovaSenha123"
+}
+
+// Resposta sucesso
+{
+  "message": "Senha alterada com sucesso"
+}
+
+GET /users — Listar todos os usuários (ADMIN only)
+typescript// Sem body
+
+// Resposta sucesso
+[
+  {
+    "id": "uuid-1",
+    "name": "João Admin",
+    "email": "admin@email.com",
+    "role": "ADMIN",
+    "createdAt": "2026-03-09T10:00:00.000Z"
+  },
+  {
+    "id": "uuid-2",
+    "name": "Maria Editor",
+    "email": "maria@email.com",
+    "role": "EDITOR",
+    "createdAt": "2026-03-08T10:00:00.000Z"
+  }
+]
+
+GET /users/:id — Detalhes de um usuário (ADMIN only)
+typescript// Sem body — id vem na URL
+// GET /users/uuid-do-usuario
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "name": "João Silva",
+  "email": "joao@email.com",
+  "role": "EDITOR",
+  "createdAt": "2026-03-09T10:00:00.000Z",
+  "updatedAt": "2026-03-09T10:00:00.000Z"
+}
+
+PATCH /users/:id/role — Alterar role (ADMIN only)
+typescript// Body
+{
+  "role": "ADMIN"  // ou "EDITOR"
+}
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "name": "João Silva",
+  "email": "joao@email.com",
+  "role": "ADMIN",
+  "updatedAt": "2026-03-09T10:00:00.000Z"
+}
+
+DELETE /users/:id — Remover usuário (ADMIN only)
+typescript// Sem body — id vem na URL
+
+// Resposta sucesso
+{
+  "message": "Usuário removido com sucesso"
+}
+
+👥 Clientes
+POST /clients — Criar cliente
+typescript// Body
+{
+  "name": "Empresa ABC Ltda",
+  "document": "12345678000190",    // CPF ou CNPJ
+  "email": "contato@abc.com",      // opcional
+  "phone": "3199999999",           // opcional
+  "address": "Rua das Flores, 123" // opcional
+}
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "name": "Empresa ABC Ltda",
+  "document": "12345678000190",
+  "email": "contato@abc.com",
+  "phone": "3199999999",
+  "address": "Rua das Flores, 123",
+  "createdAt": "2026-03-09T10:00:00.000Z"
+}
+
+GET /clients — Listar clientes
+typescript// Sem body
+
+// Resposta sucesso
+[
+  {
+    "id": "uuid-1",
+    "name": "Empresa ABC Ltda",
+    "document": "12345678000190",
+    "email": "contato@abc.com",
+    "phone": "3199999999",
+    "createdAt": "2026-03-09T10:00:00.000Z"
+  }
+]
+
+GET /clients/:id — Detalhes do cliente
+typescript// Sem body — id vem na URL
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "name": "Empresa ABC Ltda",
+  "document": "12345678000190",
+  "email": "contato@abc.com",
+  "phone": "3199999999",
+  "address": "Rua das Flores, 123",
+  "createdAt": "2026-03-09T10:00:00.000Z",
+  "updatedAt": "2026-03-09T10:00:00.000Z"
+}
+
+PUT /clients/:id — Editar cliente
+typescript// Body (ao menos um campo obrigatório)
+{
+  "name": "Empresa ABC Atualizada",
+  "phone": "3188888888"
+}
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "name": "Empresa ABC Atualizada",
+  "document": "12345678000190",
+  "email": "contato@abc.com",
+  "phone": "3188888888",
+  "address": "Rua das Flores, 123",
+  "updatedAt": "2026-03-09T10:00:00.000Z"
+}
+
+DELETE /clients/:id — Remover cliente (ADMIN only)
+typescript// Sem body — id vem na URL
+
+// Resposta sucesso
+{
+  "message": "Cliente removido com sucesso"
+}
+
+❌ Respostas de Erro Padrão
+typescript// Token não enviado
+{ "error": "Token Não Fornecido" }
+
+// Token inválido ou expirado
+{ "error": "Token Inválido" }
+
+// Sem permissão (não é ADMIN)
+{ "error": "Acesso negado" }
+
+// Recurso não encontrado
+{ "message": "Usuário não encontrado" }
+{ "message": "Cliente não encontrado" }
+
+// Dado duplicado
+{ "message": "Já existe um cliente com esse CPF/CNPJ" }
+{ "message": "Este email já está em uso" }
+
+// Validação de body
+{ "message": "Informe ao menos um campo para atualizar" }
+{ "message": "As senhas não coincidem" }
+{ "message": "Senha atual incorreta" }

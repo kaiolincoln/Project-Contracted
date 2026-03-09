@@ -24,3 +24,46 @@ export const authUserSchema = z.object({
         .min(1, { message: "A senha e obrigatoria" }),
     })
 })
+
+export const updateUserSchema = z.object({
+    body: z.object({
+      name: z
+        .string()
+        .min(2, "Nome deve ter pelo menos 2 caracteres")
+        .optional(),
+  
+      email: z
+        .string()
+        .email("Email inválido")
+        .optional(),
+    })
+    .refine(
+      (data) => data.name !== undefined || data.email !== undefined,
+      { message: "Informe ao menos nome ou email para atualizar" }
+    )
+  });
+
+  export const changePasswordSchema = z.object({
+    body: z.object({
+      currentPassword: z
+        .string()
+        .min(1, "Senha atual é obrigatória"),
+  
+      newPassword: z
+        .string()
+        .min(6, "Nova senha deve ter pelo menos 6 caracteres")
+        .regex(/[A-Z]/, "Nova senha deve ter pelo menos uma letra maiúscula")
+        .regex(/[0-9]/, "Nova senha deve ter pelo menos um número"),
+  
+      confirmPassword: z
+        .string()
+        .min(1, "Confirmação de senha é obrigatória"),
+    })
+    .refine(
+      (data) => data.newPassword === data.confirmPassword,
+      {
+        message: "As senhas não coincidem",
+        path: ["confirmPassword"],
+      }
+    )
+  });

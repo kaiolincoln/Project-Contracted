@@ -1,18 +1,23 @@
 // Arquivo para os endpoints das rodas. ass: lincolnn
 
 import { Router } from "express"
+import { upload } from "./config/multer";
 import { isAdmin } from "./middlewares/isAdmin";
 import { validateSchema } from "./middlewares/validateSchema";
 import { isAuthenticated } from "./middlewares/isAuthenticated";
 
 import { UpdateStatusContractController } from "./controller/Contracts/UpdateStatusContractController";
 import { ExpiringContractController } from "./controller/Contracts/ExpiringContractController";
+import { DownloadDocumentController } from "./controller/Documents/DownloadDocumentController";
 import { HistoryContractController } from "./controller/Contracts/HistoryContractController";
 import { CreateContractController } from "./controller/Contracts/CreateContractController";
 import { DetailContractController } from "./controller/Contracts/DetailContractController";
 import { UpdateContractController } from "./controller/Contracts/UpdateContractController";
+import { UploadDocumentController } from "./controller/Documents/UploadDocumentController";
+import { DeleteDocumentController } from "./controller/Documents/DeleteDocumentController";
 import { DeleteContractController } from "./controller/Contracts/DeleteContractController";
 import { ListContractController } from "./controller/Contracts/ListContractController";
+import { ListDocumentController } from "./controller/Documents/ListDocumentController";
 import { ChangePasswordController } from "./controller/User/ChangePasswordController";
 import { CreateClientController } from "./controller/Clients/CreateClientController";
 import { DeleteClientController } from "./controller/Clients/DeleteClientController";
@@ -39,12 +44,16 @@ import { authUserSchema,
 
 const updateStatusContractController = new UpdateStatusContractController();
 const expiringContractController = new ExpiringContractController();
+const downloadDocumentController = new DownloadDocumentController();
 const historyContractController = new HistoryContractController();
 const deleteContractController = new DeleteContractController();
 const detailContractController = new DetailContractController();
 const updateContractController = new UpdateContractController();
 const createContractController = new CreateContractController();
+const uploadDocumentController = new UploadDocumentController();
+const deleteDocumentController = new DeleteDocumentController();
 const changePasswordController = new ChangePasswordController();
+const listDocumentController = new ListDocumentController();
 const listContractController = new ListContractController();
 const createClientController = new CreateClientController();
 const detailClientController = new DetailClientController();
@@ -56,6 +65,7 @@ const deleteUserController = new DeleteUserController();
 const listUserController = new ListUserController();
 const router = Router();
 
+// parte user >_<
 router.post(
     '/users',
     validateSchema(createUserSchema),
@@ -146,7 +156,7 @@ router.delete(
   (req, res) => deleteClientController.handle(req, res)
 );
 
-// parte dos Contratos
+// parte dos Contratos 0_0
 
 router.post(
   "/contracts",
@@ -199,6 +209,33 @@ router.delete(
   isAuthenticated,
   isAdmin,
   (req, res) => deleteContractController.handle(req, res)
+);
+
+// parte dos Documentos *-*
+
+router.post(
+  "/contracts/:id/documents",
+  isAuthenticated,
+  upload.single("file"),
+  (req, res) => uploadDocumentController.handle(req, res)
+);
+
+router.get(
+  "/contracts/:id/documents",
+  isAuthenticated,
+  (req, res) => listDocumentController.handle(req, res)
+);
+
+router.delete(
+  "/documents/:id",
+  isAuthenticated,
+  (req, res) => deleteDocumentController.handle(req, res)
+);
+
+router.get(
+  "/documents/:id/download",
+  isAuthenticated,
+  (req, res) => downloadDocumentController.handle(req, res)
 );
 
 export { router };

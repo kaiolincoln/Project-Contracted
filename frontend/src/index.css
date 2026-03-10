@@ -1,0 +1,45 @@
+@import "tailwindcss";
+```
+
+---
+
+## Estrutura de pastas
+```
+src/
+  components/
+    layout/
+      Sidebar.tsx
+      Header.tsx
+      Layout.tsx
+    ui/
+      Button.tsx
+      Input.tsx
+      Modal.tsx
+      Badge.tsx
+  pages/
+    Login.tsx
+    Dashboard.tsx
+    contracts/
+      ContractList.tsx
+      ContractDetail.tsx
+      ContractForm.tsx
+    clients/
+      ClientList.tsx
+      ClientForm.tsx
+    users/
+      UserList.tsx
+  services/
+    api.ts           ← configuração do axios
+    authService.ts
+    contractService.ts
+    clientService.ts
+    userService.ts
+  contexts/
+    AuthContext.tsx  ← guarda token e usuário logado
+  routes/
+    index.tsx        ← define todas as rotas
+    PrivateRoute.tsx ← protege rotas autenticadas
+  types/
+    index.ts         ← todos os tipos TypeScript
+  App.tsx
+  main.tsx

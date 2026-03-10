@@ -9,7 +9,7 @@ interface UpdateContractRequest {
   endDate?: string;
   description?: string;
   clientId?: string;
-}
+}// esses sao os dados que podem ser atualizados. ass: lincoln
 
 class UpdateContractService {
   async execute({
@@ -21,11 +21,11 @@ class UpdateContractService {
     endDate,
     description,
     clientId,
-  }: UpdateContractRequest) {
+  }: UpdateContractRequest) {// metodo que atualiza os dados. ass: lincoln 
 
     const contractExists = await prismaClient.contract.findUnique({
-      where: { id: contract_id }
-    });
+      where: { id: contract_id }// vendo se o contrado Existe.  ass: lincoln
+    }); 
 
     if (!contractExists) {
       throw new Error("Contrato não encontrado");
@@ -34,7 +34,7 @@ class UpdateContractService {
     if (clientId) {
       const clientExists = await prismaClient.client.findUnique({
         where: { id: clientId }
-      });
+      });// vendo se o cliente Existe. ass: lincoln
 
       if (!clientExists) {
         throw new Error("Cliente não encontrado");
@@ -48,7 +48,7 @@ class UpdateContractService {
     if (startDate) changes.push(`Data de início alterada`);
     if (endDate) changes.push(`Data de término alterada`);
 
-    const contract = await prismaClient.contract.update({
+    const contract = await prismaClient.contract.update({ //Esse comando atualiza o contrato. ass: lincoln
       where: { id: contract_id },
       data: {
         title: title ?? contractExists.title,
@@ -68,7 +68,7 @@ class UpdateContractService {
       }
     });
 
-    if (changes.length > 0) {
+    if (changes.length > 0) { //cria histórico se houve mudança. ass: kaio
       await prismaClient.contractHistory.create({
         data: {
           action: "VALUE_UPDATED",

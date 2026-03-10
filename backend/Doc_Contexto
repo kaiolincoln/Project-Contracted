@@ -73,26 +73,26 @@ Document (Documentos Anexados)
 typescript{
   id: string (UUID)    // Identificador único
   name: string         // Nome original do arquivo
-  url: string          // URL do arquivo no storage (S3/Supabase)
+  url: string          // Caminho do arquivo salvo localmente
   size: number?        // Tamanho em bytes (opcional)
   contractId: string   // FK para Contract
   contract: Contract   // Relação com contrato
   createdAt: DateTime  // Data de upload
 }
-Observação: O arquivo físico é armazenado externamente (S3 ou Supabase Storage). O banco guarda apenas a URL de acesso.
+Observação: O arquivo físico é salvo em src/tmp/uploads. O banco guarda apenas o caminho de acesso.
 
 ContractHistory (Histórico de Alterações)
 typescript{
   id: string (UUID)    // Identificador único
   action: string       // Tipo da ação realizada
   detail: string?      // Descrição detalhada da alteração (opcional)
-  contractId: string   // FK para Contract
+  contractId: string   // FK para Contract (onDelete: Cascade)
   contract: Contract   // Relação com contrato
   userId: string       // FK para User
   user: User           // Usuário que realizou a ação
   createdAt: DateTime  // Data e hora exata da alteração
 }
-Exemplos de action: CONTRACT_CREATED, STATUS_CHANGED, VALUE_UPDATED, DOC_UPLOADED
+Exemplos de action: CONTRACT_CREATED, STATUS_CHANGED, VALUE_UPDATED, DOC_UPLOADED, DOC_DELETED, CONTRACT_DELETED
 
 Notification (Notificações)
 typescript{
@@ -100,7 +100,7 @@ typescript{
   type: string         // Tipo da notificação
   message: string      // Texto exibido ao usuário
   read: boolean        // false = não lida, true = lida
-  contractId: string   // FK para Contract
+  contractId: string   // FK para Contract (onDelete: Cascade)
   contract: Contract   // Relação com contrato
   userId: string       // FK para User
   user: User           // Usuário destinatário
@@ -112,50 +112,6 @@ EXPIRING_SOON — Contrato vence em 30, 15 ou 7 dias
 EXPIRED — Contrato passou da data de vencimento
 STATUS_CHANGED — Status do contrato foi alterado
 
-
-
-Métodos HTTP no POSTMAN
-São 5 métodos que você vai usar no projeto:
-
-GET — Buscar dados
-Nunca tem body
-O dado vai na URL
-
-GET /users          → lista todos
-GET /users/:id      → busca um específico
-GET /clients        → lista todos
-GET /clients/:id    → busca um específico
-
-POST — Criar algo novo
-Sempre tem body com os dados
-POST /users         → cria usuário
-POST /session       → faz login
-POST /clients       → cria cliente
-
-PUT — Atualizar tudo
-Tem body com os campos a atualizar
-PUT /me             → atualiza nome/email
-PUT /clients/:id    → atualiza cliente
-
-PATCH — Atualizar uma parte específica
-Tem body só com o que vai mudar
-PATCH /me/password          → só a senha
-PATCH /users/:id/role       → só a role
-PATCH /notifications/:id/read → só o status de leitura
-
-DELETE — Deletar
-Nunca tem body
-O id vai na URL
-
-DELETE /users/:id    → deleta usuário
-DELETE /clients/:id  → deleta cliente
-
-Diferença entre PUT e PATCH
-PUT   → você manda os dados que quer atualizar
-        o que não mandar mantém o valor atual
-
-PATCH → usado para atualizar UM campo específico
-        ex: só a senha, só a role, só o status
 
 🛣️ Endpoints da API
 🔓 Rotas Públicas
@@ -248,19 +204,11 @@ typescript// Sem body
     "email": "admin@email.com",
     "role": "ADMIN",
     "createdAt": "2026-03-09T10:00:00.000Z"
-  },
-  {
-    "id": "uuid-2",
-    "name": "Maria Editor",
-    "email": "maria@email.com",
-    "role": "EDITOR",
-    "createdAt": "2026-03-08T10:00:00.000Z"
   }
 ]
 
 GET /users/:id — Detalhes de um usuário (ADMIN only)
 typescript// Sem body — id vem na URL
-// GET /users/uuid-do-usuario
 
 // Resposta sucesso
 {
@@ -282,7 +230,6 @@ typescript// Body
 {
   "id": "uuid",
   "name": "João Silva",
-  "email": "joao@email.com",
   "role": "ADMIN",
   "updatedAt": "2026-03-09T10:00:00.000Z"
 }
@@ -291,16 +238,14 @@ DELETE /users/:id — Remover usuário (ADMIN only)
 typescript// Sem body — id vem na URL
 
 // Resposta sucesso
-{
-  "message": "Usuário removido com sucesso"
-}
+{ "message": "Usuário removido com sucesso" }
 
 👥 Clientes
 POST /clients — Criar cliente
 typescript// Body
 {
   "name": "Empresa ABC Ltda",
-  "document": "12345678000190",    // CPF ou CNPJ
+  "document": "12345678000190",
   "email": "contato@abc.com",      // opcional
   "phone": "3199999999",           // opcional
   "address": "Rua das Flores, 123" // opcional
@@ -311,9 +256,6 @@ typescript// Body
   "id": "uuid",
   "name": "Empresa ABC Ltda",
   "document": "12345678000190",
-  "email": "contato@abc.com",
-  "phone": "3199999999",
-  "address": "Rua das Flores, 123",
   "createdAt": "2026-03-09T10:00:00.000Z"
 }
 
@@ -327,7 +269,6 @@ typescript// Sem body
     "name": "Empresa ABC Ltda",
     "document": "12345678000190",
     "email": "contato@abc.com",
-    "phone": "3199999999",
     "createdAt": "2026-03-09T10:00:00.000Z"
   }
 ]
@@ -358,10 +299,6 @@ typescript// Body (ao menos um campo obrigatório)
 {
   "id": "uuid",
   "name": "Empresa ABC Atualizada",
-  "document": "12345678000190",
-  "email": "contato@abc.com",
-  "phone": "3188888888",
-  "address": "Rua das Flores, 123",
   "updatedAt": "2026-03-09T10:00:00.000Z"
 }
 
@@ -369,29 +306,185 @@ DELETE /clients/:id — Remover cliente (ADMIN only)
 typescript// Sem body — id vem na URL
 
 // Resposta sucesso
+{ "message": "Cliente removido com sucesso" }
+
+📁 Contratos
+POST /contracts — Criar contrato
+typescript// Body
 {
-  "message": "Cliente removido com sucesso"
+  "title": "Contrato de Prestação de Serviços",
+  "number": "CTR-2026-001",
+  "value": 5000.00,
+  "startDate": "2026-03-09",
+  "endDate": "2027-03-09",
+  "clientId": "uuid-do-cliente",
+  "description": "Contrato anual de manutenção" // opcional
 }
 
+// Resposta sucesso
+{
+  "id": "uuid",
+  "title": "Contrato de Prestação de Serviços",
+  "number": "CTR-2026-001",
+  "value": "5000",
+  "status": "ACTIVE",
+  "client": { "id": "uuid", "name": "Empresa ABC" },
+  "responsible": { "id": "uuid", "name": "João" }
+}
+
+GET /contracts — Listar contratos
+typescript// Sem body
+
+// Resposta sucesso
+[
+  {
+    "id": "uuid",
+    "title": "Contrato de Prestação de Serviços",
+    "number": "CTR-2026-001",
+    "value": "5000",
+    "status": "ACTIVE",
+    "endDate": "2027-03-09T00:00:00.000Z",
+    "client": { "id": "uuid", "name": "Empresa ABC" },
+    "responsible": { "id": "uuid", "name": "João" }
+  }
+]
+
+GET /contracts/expiring — Contratos vencendo em 30 dias
+typescript// Sem body
+
+// Resposta sucesso
+[
+  {
+    "id": "uuid",
+    "title": "Contrato ABC",
+    "number": "CTR-2026-001",
+    "status": "ACTIVE",
+    "endDate": "2026-03-20T00:00:00.000Z",
+    "daysLeft": 11,
+    "client": { "id": "uuid", "name": "Empresa ABC" },
+    "responsible": { "id": "uuid", "name": "João" }
+  }
+]
+
+GET /contracts/:id — Detalhes do contrato
+typescript// Sem body — id vem na URL
+
+// Resposta sucesso (inclui documentos e histórico)
+{
+  "id": "uuid",
+  "title": "Contrato de Prestação de Serviços",
+  "status": "ACTIVE",
+  "client": { ... },
+  "responsible": { ... },
+  "documents": [ ... ],
+  "history": [ ... ]
+}
+
+PUT /contracts/:id — Editar contrato
+typescript// Body (ao menos um campo obrigatório)
+{
+  "title": "Contrato Atualizado",
+  "value": 7500.00,
+  "endDate": "2027-06-09"
+}
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "title": "Contrato Atualizado",
+  "value": "7500",
+  "updatedAt": "2026-03-09T10:00:00.000Z"
+}
+
+PATCH /contracts/:id/status — Mudar status
+typescript// Body
+{
+  "status": "CANCELLED" // ACTIVE | EXPIRED | CANCELLED | PENDING_RENEWAL
+}
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "status": "CANCELLED",
+  "updatedAt": "2026-03-09T10:00:00.000Z"
+}
+
+GET /contracts/:id/history — Histórico do contrato
+typescript// Sem body — id vem na URL
+
+// Resposta sucesso
+{
+  "contract": { "id": "uuid", "title": "Contrato ABC", "number": "CTR-2026-001" },
+  "history": [
+    {
+      "id": "uuid",
+      "action": "STATUS_CHANGED",
+      "detail": "Status alterado de ACTIVE para CANCELLED",
+      "createdAt": "2026-03-09T15:00:00.000Z",
+      "user": { "id": "uuid", "name": "João Admin" }
+    }
+  ]
+}
+
+DELETE /contracts/:id — Excluir contrato (ADMIN only)
+typescript// Sem body — id vem na URL
+// ⚠️ Só é possível deletar contratos com status CANCELLED
+
+// Resposta sucesso
+{ "message": "Contrato removido com sucesso" }
+
+📄 Documentos
+POST /contracts/:id/documents — Upload de arquivo
+typescript// Body → form-data (não é JSON!)
+// Key: file | Type: File | Value: seleciona o arquivo
+
+// Resposta sucesso
+{
+  "id": "uuid",
+  "name": "contrato.pdf",
+  "url": "/uploads/hash-contrato.pdf",
+  "size": 12345,
+  "createdAt": "2026-03-09T10:00:00.000Z"
+}
+
+GET /contracts/:id/documents — Listar documentos
+typescript// Sem body — id do contrato vem na URL
+
+// Resposta sucesso
+[
+  {
+    "id": "uuid",
+    "name": "contrato.pdf",
+    "url": "/uploads/hash-contrato.pdf",
+    "size": 12345,
+    "createdAt": "2026-03-09T10:00:00.000Z"
+  }
+]
+
+GET /documents/:id/download — Baixar arquivo
+typescript// Sem body — id do documento vem na URL
+// Resposta: download automático do arquivo
+
+DELETE /documents/:id — Remover documento
+typescript// Sem body — id do documento vem na URL
+
+// Resposta sucesso
+{ "message": "Documento removido com sucesso" }
+
 ❌ Respostas de Erro Padrão
-typescript// Token não enviado
-{ "error": "Token Não Fornecido" }
-
-// Token inválido ou expirado
+typescript{ "error": "Token Não Fornecido" }
 { "error": "Token Inválido" }
-
-// Sem permissão (não é ADMIN)
 { "error": "Acesso negado" }
-
-// Recurso não encontrado
+{ "error": "Nenhum arquivo enviado" }
 { "message": "Usuário não encontrado" }
 { "message": "Cliente não encontrado" }
-
-// Dado duplicado
+{ "message": "Contrato não encontrado" }
+{ "message": "Documento não encontrado" }
+{ "message": "Já existe um contrato com esse número" }
 { "message": "Já existe um cliente com esse CPF/CNPJ" }
 { "message": "Este email já está em uso" }
-
-// Validação de body
-{ "message": "Informe ao menos um campo para atualizar" }
+{ "message": "Não é possível deletar um contrato ativo. Cancele-o primeiro" }
+{ "message": "Não é possível alterar o status de um contrato cancelado" }
 { "message": "As senhas não coincidem" }
 { "message": "Senha atual incorreta" }
+{ "message": "Informe ao menos um campo para atualizar" }

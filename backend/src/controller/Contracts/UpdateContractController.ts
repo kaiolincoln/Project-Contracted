@@ -9,7 +9,7 @@ class UpdateContractController {
 
     const updateContractService = new UpdateContractService();
 
-    const contract = await updateContractService.execute({
+    const contract = await updateContractService.execute({  
       contract_id: id as string,
       user_id: user_id as string,
       title,

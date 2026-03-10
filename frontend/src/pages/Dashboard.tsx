@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import { contractService } from "../services/contractService";
+import { DashboardSkeleton } from "../components/ui/Skeleton";
 import type { Contract, ExpiringContract } from "../types";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 const statusLabel: Record<string, string> = {
   ACTIVE: "Ativo",
@@ -49,13 +50,7 @@ export function Dashboard() {
   const expired = contracts.filter(c => c.status === "EXPIRED").length;
   const cancelled = contracts.filter(c => c.status === "CANCELLED").length;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-500">Carregando...</div>
-      </div>
-    );
-  }
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-6">

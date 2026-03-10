@@ -68,7 +68,7 @@ export function Login() {
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Senha
             </label>
-            <input
+            <input            
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

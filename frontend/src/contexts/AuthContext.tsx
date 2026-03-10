@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { api } from "../services/api";
-import  type { User } from "../types";
+import type { User } from "../types";
+import toast from "react-hot-toast";
 
 interface AuthContextData {
   user: User | null;
@@ -30,17 +31,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string) {
     const response = await api.post("/session", { email, password });
-
     const { token } = response.data;
 
     localStorage.setItem("@contract:token", token);
     api.defaults.headers.Authorization = `Bearer ${token}`;
     setToken(token);
 
-    // Busca os dados do usuário logado
     const meResponse = await api.get("/me");
     setUser(meResponse.data);
     localStorage.setItem("@contract:user", JSON.stringify(meResponse.data));
+
+    toast.success("Bem-vindo de volta!");
   }
 
   function signOut() {
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("@contract:user");
     setUser(null);
     setToken(null);
+    toast.success("Até logo!");
   }
 
   return (

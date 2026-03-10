@@ -2,16 +2,25 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { clientService } from "../../services/clientService";
+import { TableSkeleton } from "../../components/ui/Skeleton";
+import { Pagination } from "../../components/ui/Pagination";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
+import { useConfirm } from "../../hooks/useConfirm";
+import { usePagination } from "../../hooks/usePagination";
 import type { Client } from "../../types";
+import toast from "react-hot-toast";
 
 export function ClientList() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  const { isOpen, loading: confirmLoading, options, confirm, handleConfirm, handleCancel } = useConfirm();
 
   const [clients, setClients] = useState<Client[]>([]);
   const [filtered, setFiltered] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  const { paginated, currentPage, totalPages, setCurrentPage, reset } = usePagination(filtered);
 
   useEffect(() => {
     async function load() {
@@ -31,32 +40,33 @@ export function ClientList() {
   useEffect(() => {
     if (!search) {
       setFiltered(clients);
-      return;
+    } else {
+      setFiltered(clients.filter(c =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.document.includes(search) ||
+        c.email?.toLowerCase().includes(search.toLowerCase())
+      ));
     }
-    setFiltered(clients.filter(c =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.document.includes(search) ||
-      c.email?.toLowerCase().includes(search.toLowerCase())
-    ));
+    reset();
   }, [search, clients]);
 
-  async function handleDelete(id: string) {
-    if (!confirm("Tem certeza que deseja excluir este cliente?")) return;
-    try {
-      await clientService.remove(id);
-      setClients(prev => prev.filter(c => c.id !== id));
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erro ao excluir cliente");
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-500">Carregando...</div>
-      </div>
+  function handleDelete(id: string) {
+    confirm(
+      {
+        title: "Excluir Cliente",
+        message: "Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.",
+        confirmLabel: "Sim, excluir",
+        variant: "danger",
+      },
+      async () => {
+        await clientService.remove(id);
+        setClients(prev => prev.filter(c => c.id !== id));
+        toast.success("Cliente excluído com sucesso!");
+      }
     );
   }
+
+  if (loading) return <TableSkeleton rows={5} cols={5} />;
 
   return (
     <div className="space-y-4">
@@ -102,36 +112,62 @@ export function ClientList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map(client => (
+              {paginated.map(client => (
                 <tr key={client.id} className="hover:bg-slate-50 transition">
                   <td className="px-6 py-4 font-medium text-slate-800">{client.name}</td>
                   <td className="px-6 py-4 text-slate-600">{client.document}</td>
                   <td className="px-6 py-4 text-slate-600">{client.email ?? "—"}</td>
                   <td className="px-6 py-4 text-slate-600">{client.phone ?? "—"}</td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => navigate(`/clients/${client.id}/edit`)}
-                        className="text-slate-600 hover:text-slate-800 text-xs font-medium cursor-pointer"
-                      >
-                        Editar
-                      </button>
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleDelete(client.id)}
-                          className="text-red-500 hover:text-red-700 text-xs font-medium cursor-pointer"
-                        >
-                          Excluir
-                        </button>
-                      )}
-                    </div>
-                  </td>
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => navigate(`/clients/${client.id}/edit`)}
+      className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+      title="Editar"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+      </svg>
+    </button>
+
+    {isAdmin && (
+      <button
+        onClick={() => handleDelete(client.id)}
+        className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition cursor-pointer"
+        title="Excluir"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+    )}
+  </div>
+</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
+
+      {/* Paginação */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
+
+      {/* Modal */}
+      <ConfirmModal
+        isOpen={isOpen}
+        loading={confirmLoading}
+        title={options.title}
+        message={options.message}
+        confirmLabel={options.confirmLabel}
+        variant={options.variant}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
 
     </div>
   );

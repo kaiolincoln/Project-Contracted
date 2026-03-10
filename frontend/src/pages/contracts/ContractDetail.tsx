@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { contractService } from "../../services/contractService";
-import { api } from "../../services/api";
+import { DetailSkeleton } from "../../components/ui/Skeleton";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useState, useEffect, useRef } from "react";
 import type { Contract } from "../../types";
+import { api } from "../../services/api";
+import toast from 'react-hot-toast';
 
 const statusLabel: Record<string, string> = {
   ACTIVE: "Ativo",
@@ -60,9 +62,10 @@ export function ContractDetail() {
     if (!confirm(`Alterar status para "${statusLabel[status]}"?`)) return;
     try {
       await contractService.updateStatus(id!, status);
+      toast.success("Status atualizado!");
       await load();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erro ao alterar status");
+      toast.error(err.response?.data?.message || "Erro ao alterar status");
     }
   }
 
@@ -72,6 +75,7 @@ export function ContractDetail() {
 
     setUploadLoading(true);
     try {
+      toast.success("Documento enviado com sucesso!");
       const formData = new FormData();
       formData.append("file", file);
       await api.post(`/contracts/${id}/documents`, formData, {
@@ -80,7 +84,7 @@ export function ContractDetail() {
       await load();
       setActiveTab("documents");
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erro ao fazer upload");
+      toast.error(err.response?.data?.message || "Erro ao fazer upload");
     } finally {
       setUploadLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -89,21 +93,16 @@ export function ContractDetail() {
 
   async function handleDeleteDocument(docId: string) {
     if (!confirm("Remover este documento?")) return;
+    toast.success("Documento removido com sucesso!");
     try {
       await api.delete(`/documents/${docId}`);
       await load();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erro ao remover documento");
+      toast.error(err.response?.data?.message || "Erro ao remover documento");
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-500">Carregando...</div>
-      </div>
-    );
-  }
+  if (loading) return <DetailSkeleton />;
 
   if (!contract) {
     return (
@@ -248,7 +247,7 @@ export function ContractDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         
-                          href={`http://localhost:3333/documents/${doc.id}/download`}
+                          href={`${import.meta.env.VITE_API_URL}/documents/${doc.id}/download`}
                           target="_blank"
                           className="text-blue-600 hover:text-blue-800 text-xs font-medium cursor-pointer"
                       

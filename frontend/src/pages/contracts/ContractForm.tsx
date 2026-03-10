@@ -1,15 +1,18 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { contractService } from "../../services/contractService";
 import { clientService } from "../../services/clientService";
+import { FormSkeleton } from "../../components/ui/Skeleton";
+import { useNavigate, useParams } from "react-router-dom";
 import { userService } from "../../services/userService";
 import type { Client, User } from "../../types";
+import { useState, useEffect } from "react";
+import toast from 'react-hot-toast';
 
 export function ContractForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditing = !!id;
 
+  const [initialLoading, setInitialLoading] = useState(isEditing);
   const [clients, setClients] = useState<Client[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,6 +54,8 @@ export function ContractForm() {
         }
       } catch (err) {
         console.error(err);
+      } finally{
+        setInitialLoading(false);
       }
     }
     load();
@@ -77,9 +82,10 @@ export function ContractForm() {
         await contractService.create(payload);
       }
 
+      toast.success(isEditing ? "Contrato atualizado!" : "Contrato criado com sucesso!");
       navigate("/contracts");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erro ao salvar contrato");
+      toast.error(err.response?.data?.message || "Erro ao salvar contrato");
     } finally {
       setLoading(false);
     }

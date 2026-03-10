@@ -1,15 +1,18 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { PrivateRoute } from "./PrivateRoute";
-import { Layout } from "../components/layout/Layout";
-import { Login } from "../pages/Login";
-import { Dashboard } from "../pages/Dashboard";
-import { ContractList } from "../pages/contracts/ContractList";
 import { ContractDetail } from "../pages/contracts/ContractDetail";
+import { ContractList } from "../pages/contracts/ContractList";
 import { ContractForm } from "../pages/contracts/ContractForm";
-import { ClientList } from "../pages/clients/ClientList";
 import { ClientForm } from "../pages/clients/ClientForm";
+import { ClientList } from "../pages/clients/ClientList";
+import { Layout } from "../components/layout/Layout";
+import { UserForm } from "../pages/users/UserForm";
 import { UserList } from "../pages/users/UserList";
+import { useAuth } from "../contexts/AuthContext";
+import { Dashboard } from "../pages/Dashboard";
+import { PrivateRoute } from "./PrivateRoute";
+import { NotFound } from "../pages/NotFound";
+import { Profile } from "../pages/Profile";
+import { Login } from "../pages/Login";
 
 export function AppRoutes() {
   const { isAuthenticated } = useAuth();
@@ -31,7 +34,11 @@ export function AppRoutes() {
           <Route path="clients" element={<ClientList />} />
           <Route path="clients/new" element={<ClientForm />} />
           <Route path="clients/:id/edit" element={<ClientForm />} />
+          <Route path="profile" element={<Profile />} />
           <Route path="users" element={<UserList />} />
+          <Route path="users/new" element={<UserForm />} />
+          <Route path="users/:id/edit" element={<UserForm />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

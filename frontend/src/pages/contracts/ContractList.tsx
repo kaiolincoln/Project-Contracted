@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { contractService } from "../../services/contractService";
+import { TableSkeleton } from "../../components/ui/Skeleton";
+import { Pagination } from "../../components/ui/Pagination";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
+import { useConfirm } from "../../hooks/useConfirm";
+import { usePagination } from "../../hooks/usePagination";
 import type { Contract } from "../../types";
+import toast from "react-hot-toast";
 
 const statusLabel: Record<string, string> = {
   ACTIVE: "Ativo",
@@ -21,12 +27,15 @@ const statusColor: Record<string, string> = {
 export function ContractList() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  const { isOpen, loading: confirmLoading, options, confirm, handleConfirm, handleCancel } = useConfirm();
 
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [filtered, setFiltered] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const { paginated, currentPage, totalPages, setCurrentPage, reset } = usePagination(filtered);
 
   useEffect(() => {
     async function load() {
@@ -59,25 +68,26 @@ export function ContractList() {
     }
 
     setFiltered(result);
+    reset();
   }, [search, statusFilter, contracts]);
 
-  async function handleDelete(id: string) {
-    if (!confirm("Tem certeza que deseja excluir este contrato?")) return;
-    try {
-      await contractService.remove(id);
-      setContracts(prev => prev.filter(c => c.id !== id));
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erro ao excluir contrato");
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-500">Carregando...</div>
-      </div>
+  function handleDelete(id: string) {
+    confirm(
+      {
+        title: "Excluir Contrato",
+        message: "Tem certeza que deseja excluir este contrato? Esta ação não pode ser desfeita.",
+        confirmLabel: "Sim, excluir",
+        variant: "danger",
+      },
+      async () => {
+        await contractService.remove(id);
+        setContracts(prev => prev.filter(c => c.id !== id));
+        toast.success("Contrato excluído com sucesso!");
+      }
     );
   }
+
+  if (loading) return <TableSkeleton rows={6} cols={6} />;
 
   return (
     <div className="space-y-4">
@@ -133,16 +143,48 @@ export function ContractList() {
                 <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Valor</th>
                 <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Vencimento</th>
                 <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-                <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map(contract => (
+              {paginated.map(contract => (
                 <tr key={contract.id} className="hover:bg-slate-50 transition">
+                  
                   <td className="px-6 py-4">
-                    <p className="font-medium text-slate-800">{contract.title}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{contract.number}</p>
-                  </td>
+                    <div className="flex items-center gap-2">
+                     <button
+                        onClick={() => navigate(`/contracts/${contract.id}`)}
+                        className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                        title="Ver detalhes"
+                     >
+                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+
+                  <button
+                    onClick={() => navigate(`/contracts/${contract.id}/edit`)}
+                    className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                    title="Editar"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                   </svg>
+                  </button>
+
+                   {isAdmin && contract.status === "CANCELLED" && (
+                    <button
+                      onClick={() => handleDelete(contract.id)}
+                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition cursor-pointer"
+                      title="Excluir"
+                    >
+                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                       </svg>
+                    </button>
+                    )}
+                      </div>
+                </td>
                   <td className="px-6 py-4 text-slate-600">{contract.client.name}</td>
                   <td className="px-6 py-4 font-medium text-slate-700">
                     R$ {Number(contract.value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
@@ -157,26 +199,7 @@ export function ContractList() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => navigate(`/contracts/${contract.id}`)}
-                        className="text-blue-600 hover:text-blue-800 text-xs font-medium cursor-pointer"
-                      >
-                        Ver
-                      </button>
-                      <button
-                        onClick={() => navigate(`/contracts/${contract.id}/edit`)}
-                        className="text-slate-600 hover:text-slate-800 text-xs font-medium cursor-pointer"
-                      >
-                        Editar
-                      </button>
-                      {isAdmin && contract.status === "CANCELLED" && (
-                        <button
-                          onClick={() => handleDelete(contract.id)}
-                          className="text-red-500 hover:text-red-700 text-xs font-medium cursor-pointer"
-                        >
-                          Excluir
-                        </button>
-                      )}
+                      
                     </div>
                   </td>
                 </tr>
@@ -185,6 +208,25 @@ export function ContractList() {
           </table>
         )}
       </div>
+
+      {/* Paginação */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
+
+      {/* Modal */}
+      <ConfirmModal
+        isOpen={isOpen}
+        loading={confirmLoading}
+        title={options.title}
+        message={options.message}
+        confirmLabel={options.confirmLabel}
+        variant={options.variant}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
 
     </div>
   );

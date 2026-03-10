@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { clientService } from "../../services/clientService";
+import { FormSkeleton } from "../../components/ui/Skeleton";
+import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import toast from 'react-hot-toast';
 
 export function ClientForm() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditing = !!id;
 
+  const [initialLoading, setInitialLoading] = useState(isEditing);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,6 +35,8 @@ export function ClientForm() {
         });
       } catch (err) {
         console.error(err);
+      } finally {
+        setInitialLoading(false);
       }
     }
     load();
@@ -59,9 +64,10 @@ export function ClientForm() {
         await clientService.create(payload);
       }
 
+      toast.success(isEditing ? "Cliente atualizado!" : "Cliente criado com sucesso!");
       navigate("/clients");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erro ao salvar cliente");
+      toast.error(err.response?.data?.message || "Erro ao salvar cliente");
     } finally {
       setLoading(false);
     }
